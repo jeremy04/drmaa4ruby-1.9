@@ -1,0 +1,12 @@
+DRMAA 4 Ruby 1.9 Interface 
+
+Originally written by Sun Microsystems
+
+- DL library changed with Ruby 1.9
+- FFI seemed appropriate to replace DL
+
+TODO: Installation directions:
+
+gem install ffi
+
+
