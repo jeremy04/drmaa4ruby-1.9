@@ -23,6 +23,5 @@ cd pkg/
 gem install drmaa-0.0.1.gem
 
 
-In fact maybe I should just include the pkg folder?
 
 

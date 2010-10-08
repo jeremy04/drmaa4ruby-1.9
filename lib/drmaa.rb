@@ -31,7 +31,6 @@
 #########################################################################
 
 
-require 'pp'
 require 'dl/import'
 require 'ffi'
 
@@ -511,14 +510,10 @@ private
 		err = ""
 		waited = ""
 		stat = FFI::MemoryPointer.new(:int,4)
-		pp "JOBID:#{jobid}!!!"
 		
 		(0..10).each { |x| 	err  << " "
 					waited << " "	
 		}
-		
-		pp "ERR:#{err}*"
-		pp "WAITED:#{waited}*"
 
 		usage = FFI::MemoryPointer.new :pointer, 1
 
