@@ -29,24 +29,28 @@
 #   All Rights Reserved.
 #
 #########################################################################
-
+#
+#
+#    Ruby 1.9 version of DRMAA wrapper
+#
+#
+#
 
 require 'dl/import'
 require 'ffi'
 
-module LLAMA
+module FFI_DRMAA
 	extend FFI::Library
 
         ffi_lib 'libdrmaa.so'
         attach_function 'drmaa_version', [ :pointer , :pointer , :string , :ulong ], :int
-	attach_function 'drmaa_init', [:string, :string, :ulong], :int
-	attach_function 'drmaa_allocate_job_template', [:pointer, :string, :ulong], :int
-	attach_function 'drmaa_run_job', [:string, :ulong, :pointer, :string, :ulong], :int
-	attach_function 'drmaa_set_attribute', [:pointer, :string, :string, :string, :ulong], :int
-	attach_function 'drmaa_set_vector_attribute', [:pointer, :string, :pointer, :string, :ulong], :int
-	attach_function 'drmaa_wait', [:buffer_in,:string,:ulong,:pointer,:long,:pointer,:string,:ulong], :int
-
-end
+	      attach_function 'drmaa_init', [:string, :string, :ulong], :int
+	      attach_function 'drmaa_allocate_job_template', [:pointer, :string, :ulong], :int
+	      attach_function 'drmaa_run_job', [:string, :ulong, :pointer, :string, :ulong], :int
+	      attach_function 'drmaa_set_attribute', [:pointer, :string, :string, :string, :ulong], :int
+	      attach_function 'drmaa_set_vector_attribute', [:pointer, :string, :pointer, :string, :ulong], :int
+	      attach_function 'drmaa_wait', [:buffer_in,:string,:ulong,:pointer,:long,:pointer,:string,:ulong], :int
+   end
 
 module DRMAA
 	class DRMAAException < StandardError ; end
@@ -114,8 +118,8 @@ private
    					   [ "DRMAA_ERRNO_NO_ACTIVE_SESSION",              5 ],
    					   [ "DRMAA_ERRNO_NO_MEMORY",                      6 ],
 
-							[ "DRMAA_ERRNO_INVALID_CONTACT_STRING",         7 ],
-							[ "DRMAA_ERRNO_DEFAULT_CONTACT_STRING_ERROR" ,  8 ],
+							 [ "DRMAA_ERRNO_INVALID_CONTACT_STRING",         7 ],
+							 [ "DRMAA_ERRNO_DEFAULT_CONTACT_STRING_ERROR" ,  8 ],
 						   [ "DRMAA_ERRNO_DRMS_INIT_FAILED",               9 ],
 						   [ "DRMAA_ERRNO_ALREADY_ACTIVE_SESSION",         10 ],
 						   [ "DRMAA_ERRNO_DRMS_EXIT_ERROR",                11 ],
@@ -135,7 +139,7 @@ private
 						   [ "DRMAA_ERRNO_EXIT_TIMEOUT",                   22 ],
 						   [ "DRMAA_ERRNO_NO_RUSAGE",                      23 ] ]
 
-	ERRNO_MAP_100 = [ [ "DRMAA_ERRNO_SUCCESS",                            0 ],
+	ERRNO_MAP_100 = [ [ "DRMAA_ERRNO_SUCCESS",                       0 ],
    			 		   [ "DRMAA_ERRNO_INTERNAL_ERROR",                     1 ],
    					   [ "DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE",          2 ],
    					   [ "DRMAA_ERRNO_AUTH_FAILURE",                       3 ],
@@ -143,8 +147,8 @@ private
    					   [ "DRMAA_ERRNO_NO_ACTIVE_SESSION",                  5 ],
    					   [ "DRMAA_ERRNO_NO_MEMORY",                          6 ],
 
-							[ "DRMAA_ERRNO_INVALID_CONTACT_STRING",             7 ],
-							[ "DRMAA_ERRNO_DEFAULT_CONTACT_STRING_ERROR",       8 ],
+						 	 [ "DRMAA_ERRNO_INVALID_CONTACT_STRING",             7 ],
+							 [ "DRMAA_ERRNO_DEFAULT_CONTACT_STRING_ERROR",       8 ],
    					   [ "DRMAA_ERRNO_NO_DEFAULT_CONTACT_STRING_SELECTED", 9 ],
 						   [ "DRMAA_ERRNO_DRMS_INIT_FAILED",                   10 ],
 						   [ "DRMAA_ERRNO_ALREADY_ACTIVE_SESSION",             11 ],
@@ -207,6 +211,8 @@ private
 			end
 			@libdrmaa = DL.dlopen('libdrmaa' + libext)
 
+#     These do not work in Ruby 1.9.1
+#
 #			@drmaa_version = @libdrmaa['drmaa_version', 'IiisI']
 #			@drmaa_get_drm_system = @libdrmaa['drmaa_get_DRM_system', 'IsIsI']
 #			@drmaa_get_contact = @libdrmaa['drmaa_get_contact', 'IsIsI']
@@ -248,7 +254,7 @@ private
 #			@drmaa_wexitstatus = @libdrmaa['drmaa_wexitstatus', 'IiIsI']
 #			@drmaa_wtermsig = @libdrmaa['drmaa_wtermsig', 'IsIIsI']
 #			@drmaa_strerror = @libdrmaa['drmaa_strerror', 'SI']
-# ruby 1.9	
+
 			@version = 1.0
 			@version = DRMAA.version
 
@@ -305,13 +311,11 @@ public
 	# int drmaa_version(unsigned int *, unsigned int *, char *, size_t )
 	def DRMAA.version
 		DRMAA.dopen
-		#err = EC
-		#major = minor = 0
 		err=""
 		(0..100).each { |x| err << " "}
 		major = FFI::MemoryPointer.new(:int, 1)
 		minor = FFI::MemoryPointer.new(:int, 1)
-		r = LLAMA.drmaa_version major,minor, err, 160
+		r = FFI_DRMAA.drmaa_version major,minor, err, 160
 		r1 = [major.read_int,minor.read_int, err, 160]	
 		DRMAA.throw(r, r1[2])
 		return r1[0] + (Float(r1[1])/100)
@@ -344,11 +348,9 @@ private
 	# int drmaa_init(const char *, char *, size_t)
 	def DRMAA.init(contact)
 		DRMAA.dopen
-		#err = EC
-		#r,r1 = @drmaa_init.call(contact, err, 160-1)
 		err=""
 		(0..100).each { |x| err << " "}
-		r = LLAMA.drmaa_init contact, err, 160-1
+		r = FFI_DRMAA.drmaa_init contact, err, 160-1
 		r1 = [contact,err,160-1]
 		DRMAA.throw(r, r1[1])
 	end
@@ -363,13 +365,10 @@ private
 
 	# int drmaa_allocate_job_template(drmaa_job_template_t **, char *, size_t)
 	def DRMAA.allocate_job_template
-		#err = EC
-		#jt = DL.malloc(DL.sizeof('p'))
-		#r,r1 = @drmaa_allocate_job_template.call(jt, err, 160)
 		err=""
                 (0..100).each { |x| err << " "}
 		jt = FFI::MemoryPointer.new :pointer
-		r = LLAMA.drmaa_allocate_job_template jt, err, 160
+		r = FFI_DRMAA.drmaa_allocate_job_template jt, err, 160
 		r1 = [jt,err,160]
 
 		DRMAA.throw(r, r1[1])
@@ -502,11 +501,6 @@ private
 	def DRMAA.wait(jobid, timeout)
 		errno_timeout = DRMAA.str2errno("DRMAA_ERRNO_EXIT_TIMEOUT")
 		errno_no_rusage = DRMAA.str2errno("DRMAA_ERRNO_NO_RUSAGE")
-		#err = EC
-		#waited = EC
-		#stat = 0
-		#usage = DL.malloc(DL.sizeof('p'))
-		#r,r1 = @drmaa_wait.call(jobid, waited, 160, stat, timeout, usage, err, 160)
 		err = ""
 		waited = ""
 		stat = FFI::MemoryPointer.new(:int,4)
@@ -517,14 +511,13 @@ private
 
 		usage = FFI::MemoryPointer.new :pointer, 1
 
-
-		r = LLAMA.drmaa_wait jobid, waited, 160, stat, timeout, usage, err, 160
+		r = FFI_DRMAA.drmaa_wait jobid, waited, 160, stat, timeout, usage, err, 160
 		r1 = [jobid, waited, 160, stat, timeout, usage, err, 160]
 		
 		return nil if r == errno_timeout
 		if r != errno_no_rusage
 			DRMAA.throw(r, r1[6])
-			return JobInfo.new(r1[1], r1[3], usage)
+			return JobInfo.new(r1[1], r1[3], nil) # TODO: change to when ready:      JobInfo.new(r1[1], r1[3], usage)
 		else
 			return JobInfo.new(r1[1], r1[3])
 		end
@@ -542,14 +535,11 @@ private
 
 	# int drmaa_run_job(char *, size_t, const drmaa_job_template_t *, char *, size_t)
 	def DRMAA.run_job(jt)
-		#err = EC
-		#jobid = JC
-		#r,r1 = @drmaa_run_job.call(jobid, 25, jt.ptr, err, 160)
 		err=""
                 (0..100).each { |x| err << " "}
 		jobid=""
                 (0..100).each { |x| jobid  << " "}
-		r = LLAMA.drmaa_run_job jobid, 25, jt.get_pointer(0), err, 160
+		r = FFI_DRMAA.drmaa_run_job jobid, 25, jt.get_pointer(0), err, 160
 		r1 = [jobid,25,jt.get_pointer(0), err, 160]
 
 		DRMAA.throw(r, r1[3])
@@ -558,11 +548,9 @@ private
 
 	# int drmaa_set_attribute(drmaa_job_template_t *, const char *, const char *, char *, size_t)
 	def DRMAA.set_attribute(jt, name, value)
-		#err = EC
-		#r,r1 = @drmaa_set_attribute.call(jt.ptr, name, value, err, 160)
 		err=""
                 (0..100).each { |x| err << " "}
-                r = LLAMA.drmaa_set_attribute jt.get_pointer(0), name, value, err, 160
+                r = FFI_DRMAA.drmaa_set_attribute jt.get_pointer(0), name, value, err, 160
                 r1 =  [jt.get_pointer(0),name,value,err,160]
 		DRMAA.throw(r, r1[3])
 	end
@@ -570,9 +558,6 @@ private
 	# int drmaa_set_vector_attribute(drmaa_job_template_t *, const char *, 
 	#                               const char *value[], char *, size_t)
 	def DRMAA.set_vector_attribute(jt, name, ary)
-		#err = EC
-		#ids = ary.map{|s| s.to_ptr}
-		#ids << DL::PtrData.new(0)
 		err=""
 		(0..100).each { |x| err << " "}
    		ary = ary.flatten!
@@ -586,9 +571,8 @@ private
 			argv[i].put_pointer(0, p)
 		end
 
-		r = LLAMA.drmaa_set_vector_attribute jt.get_pointer(0), name, argv, err, 160
+		r = FFI_DRMAA.drmaa_set_vector_attribute jt.get_pointer(0), name, argv, err, 160
 		r1 = [jt.get_pointer(0),name, argv, err, 160]
-		#r,r1 = @drmaa_set_vector_attribute.call(jt.ptr, name, ids, err, 160)
 		DRMAA.throw(r, r1[3])
 	end
 
@@ -697,6 +681,7 @@ public
 			@job = job
 			@stat = stat
 			@rusage = Hash.new
+			
 			if ! rusage.nil?
 				DRMAA.get_attr_values(rusage).each { |u|
 					nv = u.scan(/[^=][^=]*/)
