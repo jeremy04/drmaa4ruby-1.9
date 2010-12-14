@@ -38,14 +38,21 @@
 
 require 'dl/import'
 require 'ffi'
+require 'pp'
 
 module FFI_DRMAA
 	extend FFI::Library
 
         ffi_lib 'libdrmaa.so'
-        attach_function 'drmaa_version', [ :pointer , :pointer , :string , :ulong ], :int
+	      attach_function 'drmaa_version', [ :pointer , :pointer , :string , :ulong ], :int
 	      attach_function 'drmaa_init', [:string, :string, :ulong], :int
 	      attach_function 'drmaa_allocate_job_template', [:pointer, :string, :ulong], :int
+	
+	      attach_function 'drmaa_get_attribute', [:pointer, :string, :ulong], :int
+              attach_function 'drmaa_get_attribute_names', [:pointer, :string, :ulong], :int
+              attach_function 'drmaa_get_vector_attribute', [:pointer, :string, :pointer, :string, :ulong], :int
+              attach_function 'drmaa_get_vector_attribute_names', [:pointer, :string, :ulong], :int
+
 	      attach_function 'drmaa_run_job', [:string, :ulong, :pointer, :string, :ulong], :int
 	      attach_function 'drmaa_set_attribute', [:pointer, :string, :string, :string, :ulong], :int
 	      attach_function 'drmaa_set_vector_attribute', [:pointer, :string, :pointer, :string, :ulong], :int
@@ -384,18 +391,31 @@ private
 
 	# int drmaa_get_vector_attribute_names(drmaa_attr_names_t **, char *, size_t)
 	def DRMAA.vector_attributes()
-		err = EC
-		names = DL.malloc(DL.sizeof('p'))
-		r,r1 = @drmaa_get_vector_attribute_names.call(names, err, 160)
+		#err = EC
+		#names = DL.malloc(DL.sizeof('p'))
+		#r,r1 = @drmaa_get_vector_attribute_names.call(names, err, 160)
+                err=""
+                (0..100).each { |x| err << " "}
+                jt = FFI::MemoryPointer.new :pointer
+                r = FFI_DRMAA.drmaa_get_vector_attribute_names jt, err, 160
+                r1 = [jt,err,160]
+
 		DRMAA.throw(r, r1[1])
 		return DRMAA.get_attr_names(names)
 	end
 
 	# int drmaa_get_attribute_names(drmaa_attr_names_t **, char *, size_t)
 	def DRMAA.attributes()
-		err = EC
-		names = DL.malloc(DL.sizeof('p'))
-		r,r1 = @drmaa_get_attribute_names.call(names, err, 160)
+		#err = EC
+		#names = DL.malloc(DL.sizeof('p'))
+		#r,r1 = @drmaa_get_attribute_names.call(names, err, 160)
+		err=""
+                (0..100).each { |x| err << " "}
+                jt = FFI::MemoryPointer.new :pointer
+                r = FFI_DRMAA.get_attribute_names jt, err, 160
+                r1 = [jt,err,160]
+
+
 		DRMAA.throw(r, r1[1])
 		return DRMAA.get_attr_names(names)
 	end
@@ -560,10 +580,9 @@ private
 	def DRMAA.set_vector_attribute(jt, name, ary)
 		err=""
 		(0..100).each { |x| err << " "}
-   		ary = ary.flatten!
-
+		if ary.length > 1 then 	ary = ary.flatten! end
 		strptrs = []
-		ary.each { |x| strptrs << FFI::MemoryPointer.from_string(x) }
+		ary.each { |x| strptrs << FFI::MemoryPointer.from_string(x) }	
 		strptrs << nil
 
 		argv = FFI::MemoryPointer.new(:pointer,strptrs.length)
@@ -589,8 +608,13 @@ private
 	# int drmaa_get_vector_attribute(drmaa_job_template_t *, const char *, 
 	#                   drmaa_attr_values_t **, char *, size_t )
 	def DRMAA.get_vector_attribute(jt, name)
-		attr = DL.malloc(DL.sizeof('p'))
-		r,r1 = @drmaa_get_vector_attribute.call(jt.ptr, name, attr, err, 160)
+		#attr = DL.malloc(DL.sizeof('p'))
+		#r,r1 = @drmaa_get_vector_attribute.call(jt.ptr, name, attr, err, 160)
+		err=""
+                (0..100).each { |x| err << " "}
+		attr = FFI::MemoryPointer.new :pointer
+		r = FFI_DRMAA.drmaa_get_vector_attribute jt.get_pointer(0), name, attr, err, 160
+		r1 = [jt.get_pointer(0), name, attr, err, 160]	
 		DRMAA.throw(r, r1[3])
 		return drmaa_get_vector_attribute(r1[2])
 	end
