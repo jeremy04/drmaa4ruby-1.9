@@ -1,4 +1,5 @@
 Manifest
 README
 Rakefile
+example/example1.rb
 lib/drmaa.rb

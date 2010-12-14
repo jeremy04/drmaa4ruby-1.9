@@ -580,7 +580,7 @@ private
 	def DRMAA.set_vector_attribute(jt, name, ary)
 		err=""
 		(0..100).each { |x| err << " "}
-		if ary.length > 1 then 	ary = ary.flatten! end
+		ary = ary.flatten
 		strptrs = []
 		ary.each { |x| strptrs << FFI::MemoryPointer.from_string(x) }	
 		strptrs << nil
