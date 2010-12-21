@@ -57,6 +57,11 @@ module FFI_DRMAA
 	      attach_function 'drmaa_set_attribute', [:pointer, :string, :string, :string, :ulong], :int
 	      attach_function 'drmaa_set_vector_attribute', [:pointer, :string, :pointer, :string, :ulong], :int
 	      attach_function 'drmaa_wait', [:buffer_in,:string,:ulong,:pointer,:long,:pointer,:string,:ulong], :int
+
+
+              attach_function 'drmaa_exit', [:string, :ulong], :int
+
+
    end
 
 module DRMAA
@@ -365,8 +370,11 @@ private
 
 	# int drmaa_exit(char *, size_t)
 	def DRMAA.exit
-		err = EC
-		r,r1 = @drmaa_exit.call(err, 160)
+		err = ""
+		#r,r1 = @drmaa_exit.call(err, 160)
+		(0..100).each{ |x| err << " "}
+		r = FFI_DRMAA.drmaa_exit err, 160
+		r1 = [err,160]
 		DRMAA.throw(r, r1[0])
 	end
 
