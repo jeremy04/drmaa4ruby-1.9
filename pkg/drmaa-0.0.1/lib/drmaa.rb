@@ -56,12 +56,12 @@ module FFI_DRMAA
 	      attach_function 'drmaa_run_job', [:string, :ulong, :pointer, :string, :ulong], :int
 	      attach_function 'drmaa_set_attribute', [:pointer, :string, :string, :string, :ulong], :int
 	      attach_function 'drmaa_set_vector_attribute', [:pointer, :string, :pointer, :string, :ulong], :int
+	      attach_function 'drmaa_get_contact', [:string, :ulong, :string, :ulong], :int
+	      attach_function 'drmaa_get_DRM_system', [:string, :ulong, :string, :ulong], :int
+	      attach_function 'drmaa_get_DRMAA_implementation', [:string, :ulong, :string, :ulong], :int
 	      attach_function 'drmaa_wait', [:buffer_in,:string,:ulong,:pointer,:long,:pointer,:string,:ulong], :int
-
-
               attach_function 'drmaa_exit', [:string, :ulong], :int
-
-
+	      attach_function 'drmaa_run_bulk_jobs', [:pointer,:pointer,:int,:int,:int,:string,:ulong], :int
    end
 
 module DRMAA
@@ -205,6 +205,7 @@ private
 		return errno
 	end
 
+    ErrSize = 101
 	# 161 character buffer constant (length is arbitrary)
 	JC = EC = "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" +
 		       "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" +
@@ -293,8 +294,10 @@ public
 	# int drmaa_get_drm_system(char *, size_t , char *, size_t)
 	def DRMAA.drm_system
 		DRMAA.dopen
-		err = drm = EC
-		r,r1 = @drmaa_get_drm_system.call(drm, 160, err, 160)
+        drm = " " * ErrSize
+        err = " " * ErrSize
+		r = FFI_DRMAA.drmaa_get_DRM_system(drm, ErrSize, err, ErrSize)
+		r1 = [drm, ErrSize, err, ErrSize]
 		DRMAA.throw(r, r1[2])
 		return r1[0]
 	end
@@ -303,8 +306,10 @@ public
 	# int drmaa_get_contact(char *, size_t, char *, size_t)
 	def DRMAA.contact
 		DRMAA.dopen
-		err = contact = EC
-		r,r1 = @drmaa_get_contact.call(contact, 160, err, 160)
+        contact = " " * ErrSize
+        err = " " * ErrSize
+		r,r1 = FFI_DRMAA.drmaa_get_contact(contact, ErrSize, err, ErrSize)
+		r1 = [contact, ErrSize, err, ErrSize]
 		DRMAA.throw(r, r1[2])
 		return r1[0]
 	end
@@ -313,8 +318,10 @@ public
 	# int drmaa_get_DRMAA_implementation(char *, size_t , char *, size_t)
 	def DRMAA.drmaa_implementation
 		DRMAA.dopen
-		err = implementation = EC
-		r,r1 = @drmaa_get_drmaa_implementation.call(implementation, 160, err, 160)
+        err = " " * ErrSize
+        impl = " " * ErrSize
+		r = FFI_DRMAA.drmaa_get_DRMAA_implementation(impl, ErrSize, err, ErrSize)
+		r1 = [impl, ErrSize, err, ErrSize]
 		DRMAA.throw(r, r1[2])
 		return r1[0]
 	end
@@ -360,10 +367,9 @@ private
 	# int drmaa_init(const char *, char *, size_t)
 	def DRMAA.init(contact)
 		DRMAA.dopen
-		err=""
-		(0..100).each { |x| err << " "}
-		r = FFI_DRMAA.drmaa_init contact, err, 160-1
-		r1 = [contact,err,160-1]
+		err=" " * ErrSize
+		r = FFI_DRMAA.drmaa_init contact, err, ErrSize-1
+		r1 = [contact,err,ErrSize-1]
 		DRMAA.throw(r, r1[1])
 	end
 
@@ -554,21 +560,20 @@ private
 	# int drmaa_run_bulk_jobs(drmaa_job_ids_t **, const drmaa_job_template_t *jt, 
 	#                         int, int, int, char *, size_t)
 	def DRMAA.run_bulk_jobs(jt, first, last, incr)
-		err = EC
-		ids = DL.malloc(DL.sizeof('p'))
-		r,r1 = @drmaa_run_bulk_jobs.call(ids, jt.ptr, first, last, incr, err, 160)
+		err = " " * ErrSize
+		ids = FFI::MemoryPointer.new(:pointer)
+		r = FFI_DRMAA.drmaa_run_bulk_jobs(ids, jt, first, last, incr, err, ErrSize)
+		r1 = [ids, jt, first, last, incr, err, ErrSize]
 		DRMAA.throw(r, r1[5])
 		return DRMAA.get_job_ids(ids)
 	end
 
 	# int drmaa_run_job(char *, size_t, const drmaa_job_template_t *, char *, size_t)
 	def DRMAA.run_job(jt)
-		err=""
-                (0..100).each { |x| err << " "}
-		jobid=""
-                (0..100).each { |x| jobid  << " "}
-		r = FFI_DRMAA.drmaa_run_job jobid, 25, jt.get_pointer(0), err, 160
-		r1 = [jobid,25,jt.get_pointer(0), err, 160]
+		err=" " * ErrSize
+		jobid=" " * ErrSize
+		r = FFI_DRMAA.drmaa_run_job jobid, ErrSize, jt.get_pointer(0), err, ErrSize
+		r1 = [jobid,ErrSize,jt.get_pointer(0), err, ErrSize]
 
 		DRMAA.throw(r, r1[3])
 		return r1[0]
@@ -586,20 +591,20 @@ private
 	# int drmaa_set_vector_attribute(drmaa_job_template_t *, const char *, 
 	#                               const char *value[], char *, size_t)
 	def DRMAA.set_vector_attribute(jt, name, ary)
-		err=""
-		(0..100).each { |x| err << " "}
-		ary = ary.flatten
-		strptrs = []
-		ary.each { |x| strptrs << FFI::MemoryPointer.from_string(x) }	
-		strptrs << nil
+        err=" " * ErrSize
+        ary.flatten!
+
+        strptrs = []
+        ary.each { |x| strptrs << FFI::MemoryPointer.from_string(x) }
+        strptrs << nil
 
 		argv = FFI::MemoryPointer.new(:pointer,strptrs.length)
 		strptrs.each_with_index do |p,i|
 			argv[i].put_pointer(0, p)
 		end
 
-		r = FFI_DRMAA.drmaa_set_vector_attribute jt.get_pointer(0), name, argv, err, 160
-		r1 = [jt.get_pointer(0),name, argv, err, 160]
+		r = FFI_DRMAA.drmaa_set_vector_attribute jt.get_pointer(0), name, argv, err, ErrSize
+		r1 = [jt.get_pointer(0),name, argv, err, ErrSize]
 		DRMAA.throw(r, r1[3])
 	end
 

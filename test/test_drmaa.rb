@@ -1,6 +1,16 @@
 require 'helper'
 require "drmaa"
 
+class Sleeper < DRMAA::JobTemplate
+       def initialize
+                super
+                self.command = "/bin/sleep"
+                self.arg     = ["1"]
+                self.stdout  = ":/dev/null"
+                self.join    = true
+       end
+end
+
 class TestDRMAA < Test::Unit::TestCase
 
 	def setup
@@ -41,4 +51,29 @@ class TestDRMAA < Test::Unit::TestCase
 		assert_not_nil(@drm)
 	end
 
+	def test_run
+		t = DRMAA::JobTemplate.new
+		t.command = "/bin/sleep"
+		t.arg = ["1"]
+		t.stdout = ":/dev/null"
+		t.join = true
+		jobid = @session.run(t)
+		assert_not_nil(jobid)
+	end
+
+	def test_run_bulk
+		skip
+
+		ntasks = 30	
+		t = Sleeper.new
+		pre = @session.run_bulk(t, 1, ntasks, 1)
+		t.hold = true
+		suc = @session.run_bulk(t, 1, ntasks, 1)
+		# TODO -- not finished writing this test
+	end
+	
+	def test_set_v
+		t = Sleeper.new
+		assert_not_nil(t)
+	end
 end
