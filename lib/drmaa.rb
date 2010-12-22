@@ -205,6 +205,7 @@ private
 		return errno
 	end
 
+    ErrSize = 101
 	# 161 character buffer constant (length is arbitrary)
 	JC = EC = "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" +
 		       "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" +
@@ -293,11 +294,10 @@ public
 	# int drmaa_get_drm_system(char *, size_t , char *, size_t)
 	def DRMAA.drm_system
 		DRMAA.dopen
-        errSize = 101
-        drm = " " * errSize
-        err = " " * errSize
-		r = FFI_DRMAA.drmaa_get_DRM_system(drm, errSize, err, errSize)
-		r1 = [drm, errSize, err, errSize]
+        drm = " " * ErrSize
+        err = " " * ErrSize
+		r = FFI_DRMAA.drmaa_get_DRM_system(drm, ErrSize, err, ErrSize)
+		r1 = [drm, ErrSize, err, ErrSize]
 		DRMAA.throw(r, r1[2])
 		return r1[0]
 	end
@@ -306,11 +306,10 @@ public
 	# int drmaa_get_contact(char *, size_t, char *, size_t)
 	def DRMAA.contact
 		DRMAA.dopen
-        errSize = 101
-        contact = " " * errSize
-        err = " " * errSize
-		r,r1 = FFI_DRMAA.drmaa_get_contact(contact, errSize, err, errSize)
-		r1 = [contact, errSize, err, errSize]
+        contact = " " * ErrSize
+        err = " " * ErrSize
+		r,r1 = FFI_DRMAA.drmaa_get_contact(contact, ErrSize, err, ErrSize)
+		r1 = [contact, ErrSize, err, ErrSize]
 		DRMAA.throw(r, r1[2])
 		return r1[0]
 	end
@@ -319,11 +318,10 @@ public
 	# int drmaa_get_DRMAA_implementation(char *, size_t , char *, size_t)
 	def DRMAA.drmaa_implementation
 		DRMAA.dopen
-        errSize = 101
-        err = " " * errSize
-        impl = " " * errSize
-		r = FFI_DRMAA.drmaa_get_DRMAA_implementation(impl, errSize, err, errSize)
-		r1 = [impl, errSize, err, errSize]
+        err = " " * ErrSize
+        impl = " " * ErrSize
+		r = FFI_DRMAA.drmaa_get_DRMAA_implementation(impl, ErrSize, err, ErrSize)
+		r1 = [impl, ErrSize, err, ErrSize]
 		DRMAA.throw(r, r1[2])
 		return r1[0]
 	end
@@ -369,10 +367,9 @@ private
 	# int drmaa_init(const char *, char *, size_t)
 	def DRMAA.init(contact)
 		DRMAA.dopen
-        errSize = 101
-		err=" " * errSize
-		r = FFI_DRMAA.drmaa_init contact, err, errSize-1
-		r1 = [contact,err,errSize-1]
+		err=" " * ErrSize
+		r = FFI_DRMAA.drmaa_init contact, err, ErrSize-1
+		r1 = [contact,err,ErrSize-1]
 		DRMAA.throw(r, r1[1])
 	end
 
@@ -560,21 +557,20 @@ private
 	# int drmaa_run_bulk_jobs(drmaa_job_ids_t **, const drmaa_job_template_t *jt, 
 	#                         int, int, int, char *, size_t)
 	def DRMAA.run_bulk_jobs(jt, first, last, incr)
-		err = EC
-		ids = DL.malloc(DL.sizeof('p'))
-		r,r1 = @drmaa_run_bulk_jobs.call(ids, jt.ptr, first, last, incr, err, 160)
+		err = " " * ErrSize
+		ids = FFI::MemoryPointer.new(:pointer)
+		r = FFI_DRMAA.drmaa_run_bulk_jobs(ids, jt, first, last, incr, err, ErrSize)
+		r1 = [ids, jt, first, last, incr, err, ErrSize]
 		DRMAA.throw(r, r1[5])
 		return DRMAA.get_job_ids(ids)
 	end
 
 	# int drmaa_run_job(char *, size_t, const drmaa_job_template_t *, char *, size_t)
 	def DRMAA.run_job(jt)
-		err=""
-                (0..100).each { |x| err << " "}
-		jobid=""
-                (0..100).each { |x| jobid  << " "}
-		r = FFI_DRMAA.drmaa_run_job jobid, 25, jt.get_pointer(0), err, 160
-		r1 = [jobid,25,jt.get_pointer(0), err, 160]
+		err=" " * ErrSize
+		jobid=" " * ErrSize
+		r = FFI_DRMAA.drmaa_run_job jobid, ErrSize, jt.get_pointer(0), err, ErrSize
+		r1 = [jobid,ErrSize,jt.get_pointer(0), err, ErrSize]
 
 		DRMAA.throw(r, r1[3])
 		return r1[0]
@@ -592,8 +588,7 @@ private
 	# int drmaa_set_vector_attribute(drmaa_job_template_t *, const char *, 
 	#                               const char *value[], char *, size_t)
 	def DRMAA.set_vector_attribute(jt, name, ary)
-        errSize = 101
-        err=" " * errSize
+        err=" " * ErrSize
         ary.flatten!
 
         strptrs = []
@@ -605,8 +600,8 @@ private
 			argv[i].put_pointer(0, p)
 		end
 
-		r = FFI_DRMAA.drmaa_set_vector_attribute jt.get_pointer(0), name, argv, err, errSize
-		r1 = [jt.get_pointer(0),name, argv, err, errSize]
+		r = FFI_DRMAA.drmaa_set_vector_attribute jt.get_pointer(0), name, argv, err, ErrSize
+		r1 = [jt.get_pointer(0),name, argv, err, ErrSize]
 		DRMAA.throw(r, r1[3])
 	end
 
