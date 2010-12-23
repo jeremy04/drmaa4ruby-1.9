@@ -62,6 +62,14 @@ module FFI_DRMAA
     attach_function 'drmaa_wait', [:buffer_in,:string,:ulong,:pointer,:long,:pointer,:string,:ulong], :int
     attach_function 'drmaa_exit', [:string, :ulong], :int
     attach_function 'drmaa_run_bulk_jobs', [:pointer,:pointer,:int,:int,:int,:string,:ulong], :int
+    #TODO
+    attach_function 'drmaa_get_next_job_id', [ :pointer , :string , :ulong ], :int
+    attach_function 'drmaa_release_job_ids', [ :pointer ], :void
+    # attach_function 'drmaa_get_next_attr_name', [ :pointer , :string, :ulong], :int
+    # attach_function 'drmaa_release_attr_names', [ :pointer ], :void
+    # attach_function 'drmaa_get_next_attr_value',[ :pointer, :string, :ulong], :int
+    # attach_function 'drmaa_release_attr_values',[ :pointer ], :void
+
 end
 
 module DRMAA
@@ -182,9 +190,8 @@ module DRMAA
             [ "DRMAA_ERRNO_NO_RUSAGE",                          24 ],
             [ "DRMAA_ERRNO_NO_MORE_ELEMENTS",                   25 ]]
 
-
         def DRMAA.errno2str(drmaa_errno)
-            if @version < 1.0
+            if DRMAA.version < 1.0
                 s = ERRNO_MAP_095.find{ |pair| pair[1] == drmaa_errno }[0]
             else
                 s = ERRNO_MAP_100.find{ |pair| pair[1] == drmaa_errno }[0]
@@ -195,7 +202,7 @@ module DRMAA
         end
 
         def DRMAA.str2errno(str)
-            if @version < 1.0
+            if DRMAA.version < 1.0
                 errno = ERRNO_MAP_095.find{ |pair| pair[0] == str }[1]
             else
                 errno = ERRNO_MAP_100.find{ |pair| pair[0] == str }[1]
@@ -340,7 +347,7 @@ module DRMAA
         end
 
         def DRMAA.get_all(ids, nxt, rls)
-            if @version < 1.0
+            if DRMAA.version < 1.0
                 errno_expect = DRMAA.str2errno("DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE")
             else
                 errno_expect = DRMAA.str2errno("DRMAA_ERRNO_NO_MORE_ELEMENTS")
@@ -350,9 +357,20 @@ module DRMAA
             ret = 0
             while  ret != errno_expect do
                 # STDERR.puts "get_all(2) " + DRMAA.errno2str(ret)
-                err = EC
-                jobid = EC
-                r,r1 = nxt.call(ids.ptr, jobid, ErrSize)
+                err=" " * ErrSize
+                jobid=" " * ErrSize
+                # Original code here:
+                # Notice how "nxt" is not called yet, but when you use "call" it executes the function
+                #
+                #r,r1 = nxt.call(ids.get_pointer(0), jobid, ErrSize)
+                #
+                # need to refactor this.. is not generic enough .. will only do getnext and release
+
+                r = FFI_DRMAA.drmaa_get_next_job_id ids.get_pointer(0), jobid, ErrSize
+                r1 =  [ids.get_pointer(0),jobid,ErrSize]
+                
+                # ^^^^ need to refactor 
+
                 if r != errno_expect
                     DRMAA.throw(r, "unexpected error")
                     values.push(r1[1])
@@ -361,8 +379,12 @@ module DRMAA
                 ret = r
             end
             # puts "get_all(4)"
-            rls.call(ids.ptr)
-
+            #
+            # Original code:
+            #
+            # rls.call(ids.ptr)
+            FFI_DRMAA.drmaa_release_job_ids(ids.get_pointer(0))
+            # need to refactor
             return values
         end
 
