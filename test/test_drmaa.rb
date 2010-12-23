@@ -62,8 +62,6 @@ class TestDRMAA < Test::Unit::TestCase
 	end
 
 	def test_run_bulk
-		skip
-
 		ntasks = 30	
 		t = Sleeper.new
 		pre = @session.run_bulk(t, 1, ntasks, 1)
