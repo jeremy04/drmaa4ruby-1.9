@@ -66,8 +66,16 @@ module FFI_DRMAA
     attach_function 'drmaa_wtermsig', [:string,:ulong,:int,:string,:ulong], :int
     attach_function 'drmaa_wifaborted', [:pointer,:int,:string,:ulong], :int
     attach_function 'drmaa_wcoredump', [:pointer,:int,:string,:ulong], :int
-
+    attach_function 'drmaa_exit', [:string, :ulong], :int
     attach_function 'drmaa_run_bulk_jobs', [:pointer,:pointer,:int,:int,:int,:string,:ulong], :int
+    #TODO
+    attach_function 'drmaa_get_next_job_id', [ :pointer , :string , :ulong ], :int
+    attach_function 'drmaa_release_job_ids', [ :pointer ], :void
+    # attach_function 'drmaa_get_next_attr_name', [ :pointer , :string, :ulong], :int
+    # attach_function 'drmaa_release_attr_names', [ :pointer ], :void
+    # attach_function 'drmaa_get_next_attr_value',[ :pointer, :string, :ulong], :int
+    # attach_function 'drmaa_release_attr_values',[ :pointer ], :void
+
 end
 
 module DRMAA
@@ -188,12 +196,10 @@ module DRMAA
             [ "DRMAA_ERRNO_NO_RUSAGE",                          24 ],
             [ "DRMAA_ERRNO_NO_MORE_ELEMENTS",                   25 ]]
 
-
         def DRMAA.errno2str(drmaa_errno)
-            puts "v #{@version}"
-            stack = caller
-            puts stack
-            if @version < 1.0
+#            stack = caller
+#            puts stack
+            if DRMAA.version < 1.0
                 s = ERRNO_MAP_095.find{ |pair| pair[1] == drmaa_errno }[0]
             else
                 s = ERRNO_MAP_100.find{ |pair| pair[1] == drmaa_errno }[0]
@@ -204,7 +210,7 @@ module DRMAA
         end
 
         def DRMAA.str2errno(str)
-            if @version < 1.0
+            if DRMAA.version < 1.0
                 errno = ERRNO_MAP_095.find{ |pair| pair[0] == str }[1]
             else
                 errno = ERRNO_MAP_100.find{ |pair| pair[0] == str }[1]
@@ -299,8 +305,9 @@ module DRMAA
 
         # int drmaa_exit(char *, size_t)
         def DRMAA.exit
-            err = EC
-            r,r1 = @drmaa_exit.call(err, ErrSize)
+            err=" " * ErrSize
+            r = FFI_DRMAA.drmaa_exit err, ErrSize-1
+            r1 = [err,ErrSize-1]
             DRMAA.throw(r, r1[0])
         end
 
@@ -348,7 +355,7 @@ module DRMAA
         end
 
         def DRMAA.get_all(ids, nxt, rls)
-            if @version < 1.0
+            if DRMAA.version < 1.0
                 errno_expect = DRMAA.str2errno("DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE")
             else
                 errno_expect = DRMAA.str2errno("DRMAA_ERRNO_NO_MORE_ELEMENTS")
@@ -358,9 +365,20 @@ module DRMAA
             ret = 0
             while  ret != errno_expect do
                 # STDERR.puts "get_all(2) " + DRMAA.errno2str(ret)
-                err = EC
-                jobid = EC
-                r,r1 = nxt.call(ids.ptr, jobid, ErrSize)
+                err=" " * ErrSize
+                jobid=" " * ErrSize
+                # Original code here:
+                # Notice how "nxt" is not called yet, but when you use "call" it executes the function
+                #
+                #r,r1 = nxt.call(ids.get_pointer(0), jobid, ErrSize)
+                #
+                # need to refactor this.. is not generic enough .. will only do getnext and release
+
+                r = FFI_DRMAA.drmaa_get_next_job_id ids.get_pointer(0), jobid, ErrSize
+                r1 =  [ids.get_pointer(0),jobid,ErrSize]
+                
+                # ^^^^ need to refactor 
+
                 if r != errno_expect
                     DRMAA.throw(r, "unexpected error")
                     values.push(r1[1])
@@ -369,8 +387,12 @@ module DRMAA
                 ret = r
             end
             # puts "get_all(4)"
-            rls.call(ids.ptr)
-
+            #
+            # Original code:
+            #
+            # rls.call(ids.ptr)
+            FFI_DRMAA.drmaa_release_job_ids(ids.get_pointer(0))
+            # need to refactor
             return values
         end
 
@@ -478,22 +500,16 @@ module DRMAA
         #                         int, int, int, char *, size_t)
         def DRMAA.run_bulk_jobs(jt, first, last, incr)
             err = " " * ErrSize
-            strptrs = []
-            numJobs = (last - first + 1) / incr
-            #numJobs.times {|i| strptrs << FFI::MemoryPointer.from_string(err) }
-            numJobs.times {|i| strptrs << FFI::MemoryPointer.new(:pointer) }
-            puts "numJobs #{numJobs}"
-            
-            strptrs << nil
-            ids = FFI::MemoryPointer.new(:pointer,strptrs.length)
-            strptrs.each_with_index do |p,i|
-                ids[i].put_pointer(0, p)
-            end
-#            ids = FFI::MemoryPointer.new(:pointer,1)
-            
-            p ids
-            p jt
-            r = FFI_DRMAA.drmaa_run_bulk_jobs(ids, jt, first, last, incr, err, ErrSize)
+            #strptrs = []
+            #numJobs = (last - first + 1) / incr
+            #numJobs.times {|i| strptrs << FFI::MemoryPointer.from_string(i) }
+            #strptrs << nil
+            #ids = FFI::MemoryPointer.new(:pointer,strptrs.length)
+            #strptrs.each_with_index do |p,i|
+            #    ids[i].put_pointer(0, p)
+            #end
+            ids = FFI::MemoryPointer.new :pointer
+            r = FFI_DRMAA.drmaa_run_bulk_jobs(ids, jt.get_pointer(0), first, last, incr, err, ErrSize)
             r1 = [ids, jt, first, last, incr, err, ErrSize]
             DRMAA.throw(r, r1[5])
             return DRMAA.get_job_ids(ids)
