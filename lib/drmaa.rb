@@ -60,6 +60,12 @@ module FFI_DRMAA
     attach_function 'drmaa_get_DRM_system', [:string, :ulong, :string, :ulong], :int
     attach_function 'drmaa_get_DRMAA_implementation', [:string, :ulong, :string, :ulong], :int
     attach_function 'drmaa_wait', [:buffer_in,:string,:ulong,:pointer,:long,:pointer,:string,:ulong], :int
+    attach_function 'drmaa_wifexited', [:pointer,:int,:string,:ulong], :int
+    attach_function 'drmaa_wexitstatus', [:pointer,:int,:string,:ulong], :int
+    attach_function 'drmaa_wifsignaled', [:pointer,:int,:string,:ulong], :int
+    attach_function 'drmaa_wtermsig', [:string,:ulong,:int,:string,:ulong], :int
+    attach_function 'drmaa_wifaborted', [:pointer,:int,:string,:ulong], :int
+    attach_function 'drmaa_wcoredump', [:pointer,:int,:string,:ulong], :int
 
     attach_function 'drmaa_run_bulk_jobs', [:pointer,:pointer,:int,:int,:int,:string,:ulong], :int
 end
@@ -184,13 +190,16 @@ module DRMAA
 
 
         def DRMAA.errno2str(drmaa_errno)
+            puts "v #{@version}"
+            stack = caller
+            puts stack
             if @version < 1.0
                 s = ERRNO_MAP_095.find{ |pair| pair[1] == drmaa_errno }[0]
             else
                 s = ERRNO_MAP_100.find{ |pair| pair[1] == drmaa_errno }[0]
             end
             s = "DRMAA_ERRNO_INTERNAL_ERROR" if s.nil?
-            # puts "errno2str(" + drmaa_errno.to_s + ") = " + s
+             puts "errno2str(" + drmaa_errno.to_s + ") = " + s
             return s
         end
 
@@ -206,17 +215,17 @@ module DRMAA
         end
 
         # 101 character buffer constant (length is arbitrary)
-        ErrSize = 101
+        ErrSize = 161
         EC = " " * ErrSize
 
         public
         # returns string specifying the DRM system
         # int drmaa_get_drm_system(char *, size_t , char *, size_t)
         def DRMAA.drm_system
-            drm = " " * ErrSize
+            drm = " " * 20
             err = " " * ErrSize
-            r = FFI_DRMAA.drmaa_get_DRM_system(drm, ErrSize, err, ErrSize)
-            r1 = [drm, ErrSize, err, ErrSize]
+            r = FFI_DRMAA.drmaa_get_DRM_system(drm, 20, err, ErrSize)
+            r1 = [drm, 20, err, ErrSize]
             DRMAA.throw(r, r1[2])
             return r1[0]
         end
@@ -236,9 +245,9 @@ module DRMAA
         # int drmaa_get_DRMAA_implementation(char *, size_t , char *, size_t)
         def DRMAA.drmaa_implementation
             err = " " * ErrSize
-            impl = " " * ErrSize
-            r = FFI_DRMAA.drmaa_get_DRMAA_implementation(impl, ErrSize, err, ErrSize)
-            r1 = [impl, ErrSize, err, ErrSize]
+            impl = " " * 30
+            r = FFI_DRMAA.drmaa_get_DRMAA_implementation(impl, 30, err, ErrSize)
+            r1 = [impl, 30, err, ErrSize]
             DRMAA.throw(r, r1[2])
             return r1[0]
         end
@@ -252,7 +261,7 @@ module DRMAA
             r = FFI_DRMAA.drmaa_version major,minor, err, ErrSize
             r1 = [major.read_int,minor.read_int, err, ErrSize]	
             DRMAA.throw(r, r1[2])
-            return r1[0] + (Float(r1[1])/100)
+            @version = r1[0] + (Float(r1[1])/100)
         end
 
         private
@@ -386,30 +395,31 @@ module DRMAA
 
         # int drmaa_wifexited(int *, int, char *, size_t)
         def DRMAA.wifexited(stat)
-            return DRMAA.wif(stat, @drmaa_wifexited)
+            return DRMAA.wif(stat, :drmaa_wifexited)
         end
 
         # int drmaa_wifsignaled(int *, int, char *, size_t)
         def DRMAA.wifsignaled(stat)
-            return DRMAA.wif(stat, @drmaa_wifsignaled)
+            return DRMAA.wif(stat, :drmaa_wifsignaled)
         end
 
         # int drmaa_wifaborted(int *, int , char *, size_t)
         def DRMAA.wifaborted(stat)
-            return DRMAA.wif(stat, @drmaa_wifaborted)
+            return DRMAA.wif(stat, :drmaa_wifaborted)
         end
 
         # int drmaa_wcoredump(int *, int , char *, size_t)
         def DRMAA.wcoredump(stat)
-            return DRMAA.wif(stat, @drmaa_wcoredump)
+            return DRMAA.wif(stat, :drmaa_wcoredump)
         end
 
         def DRMAA.wif(stat, method)
-            err = EC
-            boo = 0
-            r,r1 = method.call(boo, stat, err, ErrSize)
+            err = " " * ErrSize
+            intp = FFI::MemoryPointer.new(:int,4)
+            r = FFI_DRMAA.send(method, intp, stat, err, ErrSize)
+            r1 = [intp, stat, err, ErrSize]
             DRMAA.throw(r, r1[2])
-            boo = r1[0]
+            boo = r1[0].read_int
             if boo == 0
                 return false
             else
@@ -419,17 +429,20 @@ module DRMAA
 
         # int drmaa_wexitstatus(int *, int, char *, size_t)
         def DRMAA.wexitstatus(stat)
-            err = EC
-            ret = 0
-            r,r1 = @drmaa_wexitstatus.call(ret, stat, err, ErrSize)
+            err = " " * ErrSize
+            ret = FFI::MemoryPointer.new(:int,4)
+            r = FFI_DRMAA.drmaa_wexitstatus(ret, stat, err, ErrSize)
+            r1 = [ret, stat, err, ErrSize]
             DRMAA.throw(r, r1[2]) 
-            return r1[0]
+            return r1[0].read_int
         end
 
         # int drmaa_wtermsig(char *signal, size_t signal_len, int stat, char *error_diagnosis, size_t error_diag_len);
         def DRMAA.wtermsig(stat)
-            err = signal = EC
-            r,r1 = @drmaa_wtermsig.call(signal, ErrSize, stat, err, ErrSize)
+            err = " " * ErrSize
+            signal = " " * ErrSize
+            r = FFI_DRMAA.drmaa_wtermsig(signal, ErrSize, stat, err, ErrSize)
+            r1 = [signal, ErrSize, stat, err, ErrSize]
             DRMAA.throw(r, r1[3]) 
             return r1[0]
         end
@@ -465,17 +478,21 @@ module DRMAA
         #                         int, int, int, char *, size_t)
         def DRMAA.run_bulk_jobs(jt, first, last, incr)
             err = " " * ErrSize
-#            strptrs = []
-#            numJobs = (last - first + 1) / incr
-#            numJobs.times {|i| strptrs << FFI::MemoryPointer.from_string(err) }
+            strptrs = []
+            numJobs = (last - first + 1) / incr
+            #numJobs.times {|i| strptrs << FFI::MemoryPointer.from_string(err) }
+            numJobs.times {|i| strptrs << FFI::MemoryPointer.new(:pointer) }
+            puts "numJobs #{numJobs}"
             
-#            strptrs << nil
-#            ids = FFI::MemoryPointer.new(:pointer,strptrs.length)
-#            strptrs.each_with_index do |p,i|
-#                ids[i].put_pointer(0, p)
-#            end
-            ids = FFI::MemoryPointer.new(:pointer,1)
+            strptrs << nil
+            ids = FFI::MemoryPointer.new(:pointer,strptrs.length)
+            strptrs.each_with_index do |p,i|
+                ids[i].put_pointer(0, p)
+            end
+#            ids = FFI::MemoryPointer.new(:pointer,1)
             
+            p ids
+            p jt
             r = FFI_DRMAA.drmaa_run_bulk_jobs(ids, jt, first, last, incr, err, ErrSize)
             r1 = [ids, jt, first, last, incr, err, ErrSize]
             DRMAA.throw(r, r1[5])
@@ -626,7 +643,7 @@ module DRMAA
             attr_reader :job
             def initialize(job, stat, rusage = nil)
                 @job = job
-                @stat = stat
+                @stat = stat.read_int
                 @rusage = Hash.new
 
                 if ! rusage.nil?
