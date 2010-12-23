@@ -465,7 +465,17 @@ module DRMAA
         #                         int, int, int, char *, size_t)
         def DRMAA.run_bulk_jobs(jt, first, last, incr)
             err = " " * ErrSize
-            ids = FFI::MemoryPointer.new(:pointer)
+#            strptrs = []
+#            numJobs = (last - first + 1) / incr
+#            numJobs.times {|i| strptrs << FFI::MemoryPointer.from_string(err) }
+            
+#            strptrs << nil
+#            ids = FFI::MemoryPointer.new(:pointer,strptrs.length)
+#            strptrs.each_with_index do |p,i|
+#                ids[i].put_pointer(0, p)
+#            end
+            ids = FFI::MemoryPointer.new(:pointer,1)
+            
             r = FFI_DRMAA.drmaa_run_bulk_jobs(ids, jt, first, last, incr, err, ErrSize)
             r1 = [ids, jt, first, last, incr, err, ErrSize]
             DRMAA.throw(r, r1[5])
@@ -524,8 +534,7 @@ module DRMAA
         # int drmaa_get_vector_attribute(drmaa_job_template_t *, const char *, 
         #                   drmaa_attr_values_t **, char *, size_t )
         def DRMAA.get_vector_attribute(jt, name)
-            err=""
-            (0..100).each { |x| err << " "}
+            err=" " * ErrSize
             attr = FFI::MemoryPointer.new :pointer
             r = FFI_DRMAA.drmaa_get_vector_attribute jt.get_pointer(0), name, attr, err, ErrSize
             r1 = [jt.get_pointer(0), name, attr, err, ErrSize]	
