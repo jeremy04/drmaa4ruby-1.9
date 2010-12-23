@@ -205,95 +205,14 @@ module DRMAA
             return errno
         end
 
+        # 101 character buffer constant (length is arbitrary)
         ErrSize = 101
-        # 161 character buffer constant (length is arbitrary)
-        JC = EC = "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" +
-               "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" +
-               "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" +
-               "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0" + "\0" 
-
-        # do dlopen() and initialize symbols
-        def DRMAA.dopen
-            if @libdrmaa.nil?
-                osname = 'uname'.strip!
-                case osname
-                when "Darwin"
-                    libext = ".dylib"
-                else
-                    libext = ".so"
-                end
-                @libdrmaa = DL.dlopen('libdrmaa' + libext)
-
-                #     These do not work in Ruby 1.9.1
-                #
-                #			@drmaa_version = @libdrmaa['drmaa_version', 'IiisI']
-                #			@drmaa_get_drm_system = @libdrmaa['drmaa_get_DRM_system', 'IsIsI']
-                #			@drmaa_get_contact = @libdrmaa['drmaa_get_contact', 'IsIsI']
-                #			@drmaa_get_drmaa_implementation = @libdrmaa['drmaa_get_DRMAA_implementation', 'IsIsI']
-
-                #			@drmaa_init = @libdrmaa['drmaa_init', 'ISsI']
-                #			@drmaa_exit = @libdrmaa['drmaa_exit', 'IsI']
-
-                #			@drmaa_allocate_job_template = @libdrmaa['drmaa_allocate_job_template', 'IpsI']
-                #			@drmaa_delete_job_template   = @libdrmaa['drmaa_delete_job_template', 'IPsI']
-
-                #			@drmaa_set_attribute = @libdrmaa['drmaa_set_attribute', 'IPSSsI']
-                #			@drmaa_set_vector_attribute = @libdrmaa['drmaa_set_vector_attribute', 'IPSPsI']
-                #			@drmaa_get_attribute = @libdrmaa['drmaa_get_attribute', 'IPSsIsI']
-                #			@drmaa_get_vector_attribute = @libdrmaa['drmaa_get_vector_attribute', 'IPSpsI']
-
-                #			@drmaa_get_attribute_names = @libdrmaa['drmaa_get_attribute_names', 'IpsI']
-                #			@drmaa_get_vector_attribute_names = @libdrmaa['drmaa_get_vector_attribute_names', 'IpsI']
-
-                #			@drmaa_run_job = @libdrmaa['drmaa_run_job', 'IsIPsI']
-                #			@drmaa_run_bulk_jobs = @libdrmaa['drmaa_run_bulk_jobs', 'IpPIIIsI']
-
-                #			@drmaa_get_next_job_id = @libdrmaa['drmaa_get_next_job_id', 'IPsI']
-                #			@drmaa_release_job_ids = @libdrmaa['drmaa_release_job_ids', '0P']
-                #			@drmaa_get_next_attr_name = @libdrmaa['drmaa_get_next_attr_name', 'IPsI']
-                #			@drmaa_release_attr_names = @libdrmaa['drmaa_release_attr_names', '0P']
-                #			@drmaa_get_next_attr_value = @libdrmaa['drmaa_get_next_attr_value', 'IPsI']
-                #			@drmaa_release_attr_values = @libdrmaa['drmaa_release_attr_values', '0P']
-
-                #			@drmaa_job_ps = @libdrmaa['drmaa_job_ps', 'ISisI']
-                #			@drmaa_control = @libdrmaa['drmaa_control', 'ISIsI']
-                #			@drmaa_synchronize = @libdrmaa['drmaa_synchronize', 'IPLIsI']
-
-                #			@drmaa_wait = @libdrmaa['drmaa_wait', 'ISsIiIpsI']
-                #			@drmaa_wifexited = @libdrmaa['drmaa_wifexited', 'IiIsI']
-                #			@drmaa_wifsignaled = @libdrmaa['drmaa_wifsignaled', 'IiIsI']
-                #			@drmaa_wifaborted = @libdrmaa['drmaa_wifaborted', 'IiIsI']
-                #			@drmaa_wcoredump = @libdrmaa['drmaa_wcoredump', 'IiIsI']
-                #			@drmaa_wexitstatus = @libdrmaa['drmaa_wexitstatus', 'IiIsI']
-                #			@drmaa_wtermsig = @libdrmaa['drmaa_wtermsig', 'IsIIsI']
-                #			@drmaa_strerror = @libdrmaa['drmaa_strerror', 'SI']
-
-                @version = 1.0
-                @version = DRMAA.version
-
-                if @version >= 1.0
-                    # Here we could initialize symbols for 1.0 specific
-                    #    int drmaa_get_num_attr_names(drmaa_attr_names_t* values, int *size);
-                    #    int drmaa_get_num_attr_values(drmaa_attr_values_t* values, int *size);
-                    #    int drmaa_get_num_job_ids(drmaa_job_ids_t* values, int *size);
-                    # actually we don't need these, but a failure with loading them can't be igored
-
-                    # remember to work on these too 1.9.1
-
-                    #@drmaa_get_num_attr_names = @libdrmaa['drmaa_get_num_attr_names', 'IPi']
-                    #@drmaa_get_num_attr_values = @libdrmaa['drmaa_get_num_attr_values', 'IPi']
-                    #@drmaa_get_num_job_ids = @libdrmaa['drmaa_get_num_job_ids', 'IPi']
-
-                    # TODO
-                end
-            end
-        end
+        EC = " " * ErrSize
 
         public
         # returns string specifying the DRM system
         # int drmaa_get_drm_system(char *, size_t , char *, size_t)
         def DRMAA.drm_system
-            DRMAA.dopen
             drm = " " * ErrSize
             err = " " * ErrSize
             r = FFI_DRMAA.drmaa_get_DRM_system(drm, ErrSize, err, ErrSize)
@@ -305,7 +224,6 @@ module DRMAA
         # returns string specifying contact information
         # int drmaa_get_contact(char *, size_t, char *, size_t)
         def DRMAA.contact
-            DRMAA.dopen
             contact = " " * ErrSize
             err = " " * ErrSize
             r,r1 = FFI_DRMAA.drmaa_get_contact(contact, ErrSize, err, ErrSize)
@@ -317,7 +235,6 @@ module DRMAA
         # returns string specifying DRMAA implementation
         # int drmaa_get_DRMAA_implementation(char *, size_t , char *, size_t)
         def DRMAA.drmaa_implementation
-            DRMAA.dopen
             err = " " * ErrSize
             impl = " " * ErrSize
             r = FFI_DRMAA.drmaa_get_DRMAA_implementation(impl, ErrSize, err, ErrSize)
@@ -329,13 +246,11 @@ module DRMAA
         # returns DRMAA version (e.g. 1.0 or 0.95)
         # int drmaa_version(unsigned int *, unsigned int *, char *, size_t )
         def DRMAA.version
-            DRMAA.dopen
-            err=""
-            (0..100).each { |x| err << " "}
+            err= " " * ErrSize
             major = FFI::MemoryPointer.new(:int, 1)
             minor = FFI::MemoryPointer.new(:int, 1)
-            r = FFI_DRMAA.drmaa_version major,minor, err, 160
-            r1 = [major.read_int,minor.read_int, err, 160]	
+            r = FFI_DRMAA.drmaa_version major,minor, err, ErrSize
+            r1 = [major.read_int,minor.read_int, err, ErrSize]	
             DRMAA.throw(r, r1[2])
             return r1[0] + (Float(r1[1])/100)
         end
@@ -351,7 +266,7 @@ module DRMAA
         def DRMAA.job_ps(job)
             err = EC
             state = 0
-            r,r1 = @drmaa_job_ps.call(job, state, err, 160)
+            r,r1 = @drmaa_job_ps.call(job, state, err, ErrSize)
             DRMAA.throw(r, r1[2])
             return r1[1]
         end
@@ -359,14 +274,13 @@ module DRMAA
         # int drmaa_control(const char *, int , char *, size_t )
         def DRMAA.control(job, action)
             err = EC
-            r,r1 = @drmaa_control.call(job, action, err, 160)
+            r,r1 = @drmaa_control.call(job, action, err, ErrSize)
             DRMAA.throw(r, r1[2])
         end
 
 
         # int drmaa_init(const char *, char *, size_t)
         def DRMAA.init(contact)
-            DRMAA.dopen
             err=" " * ErrSize
             r = FFI_DRMAA.drmaa_init contact, err, ErrSize-1
             r1 = [contact,err,ErrSize-1]
@@ -377,17 +291,16 @@ module DRMAA
         # int drmaa_exit(char *, size_t)
         def DRMAA.exit
             err = EC
-            r,r1 = @drmaa_exit.call(err, 160)
+            r,r1 = @drmaa_exit.call(err, ErrSize)
             DRMAA.throw(r, r1[0])
         end
 
         # int drmaa_allocate_job_template(drmaa_job_template_t **, char *, size_t)
         def DRMAA.allocate_job_template
-            err=""
-            (0..100).each { |x| err << " "}
+            err=" " * ErrSize
             jt = FFI::MemoryPointer.new :pointer
-            r = FFI_DRMAA.drmaa_allocate_job_template jt, err, 160
-            r1 = [jt,err,160]
+            r = FFI_DRMAA.drmaa_allocate_job_template jt, err, ErrSize
+            r1 = [jt,err,ErrSize]
 
             DRMAA.throw(r, r1[1])
             return jt
@@ -396,20 +309,17 @@ module DRMAA
         # int drmaa_delete_job_template(drmaa_job_template_t *, char *, size_t)
         def DRMAA.delete_job_template(jt)
             err = EC
-            r,r1 = @drmaa_delete_job_template.call(jt.ptr, err, 160)
+            r,r1 = @drmaa_delete_job_template.call(jt.ptr, err, ErrSize)
             DRMAA.throw(r, r1[1])
         end
 
         # int drmaa_get_vector_attribute_names(drmaa_attr_names_t **, char *, size_t)
         def DRMAA.vector_attributes()
-            #err = EC
-            #names = DL.malloc(DL.sizeof('p'))
-            #r,r1 = @drmaa_get_vector_attribute_names.call(names, err, 160)
             err=""
             (0..100).each { |x| err << " "}
             jt = FFI::MemoryPointer.new :pointer
-            r = FFI_DRMAA.drmaa_get_vector_attribute_names jt, err, 160
-            r1 = [jt,err,160]
+            r = FFI_DRMAA.drmaa_get_vector_attribute_names jt, err, ErrSize
+            r1 = [jt,err,ErrSize]
 
             DRMAA.throw(r, r1[1])
             return DRMAA.get_attr_names(names)
@@ -417,14 +327,11 @@ module DRMAA
 
         # int drmaa_get_attribute_names(drmaa_attr_names_t **, char *, size_t)
         def DRMAA.attributes()
-            #err = EC
-            #names = DL.malloc(DL.sizeof('p'))
-            #r,r1 = @drmaa_get_attribute_names.call(names, err, 160)
             err=""
             (0..100).each { |x| err << " "}
             jt = FFI::MemoryPointer.new :pointer
-            r = FFI_DRMAA.get_attribute_names jt, err, 160
-            r1 = [jt,err,160]
+            r = FFI_DRMAA.get_attribute_names jt, err, ErrSize
+            r1 = [jt,err,ErrSize]
 
 
             DRMAA.throw(r, r1[1])
@@ -444,7 +351,7 @@ module DRMAA
                 # STDERR.puts "get_all(2) " + DRMAA.errno2str(ret)
                 err = EC
                 jobid = EC
-                r,r1 = nxt.call(ids.ptr, jobid, 160)
+                r,r1 = nxt.call(ids.ptr, jobid, ErrSize)
                 if r != errno_expect
                     DRMAA.throw(r, "unexpected error")
                     values.push(r1[1])
@@ -500,7 +407,7 @@ module DRMAA
         def DRMAA.wif(stat, method)
             err = EC
             boo = 0
-            r,r1 = method.call(boo, stat, err, 160)
+            r,r1 = method.call(boo, stat, err, ErrSize)
             DRMAA.throw(r, r1[2])
             boo = r1[0]
             if boo == 0
@@ -514,7 +421,7 @@ module DRMAA
         def DRMAA.wexitstatus(stat)
             err = EC
             ret = 0
-            r,r1 = @drmaa_wexitstatus.call(ret, stat, err, 160)
+            r,r1 = @drmaa_wexitstatus.call(ret, stat, err, ErrSize)
             DRMAA.throw(r, r1[2]) 
             return r1[0]
         end
@@ -522,7 +429,7 @@ module DRMAA
         # int drmaa_wtermsig(char *signal, size_t signal_len, int stat, char *error_diagnosis, size_t error_diag_len);
         def DRMAA.wtermsig(stat)
             err = signal = EC
-            r,r1 = @drmaa_wtermsig.call(signal, 160, stat, err, 160)
+            r,r1 = @drmaa_wtermsig.call(signal, ErrSize, stat, err, ErrSize)
             DRMAA.throw(r, r1[3]) 
             return r1[0]
         end
@@ -542,8 +449,8 @@ module DRMAA
 
             usage = FFI::MemoryPointer.new :pointer, 1
 
-            r = FFI_DRMAA.drmaa_wait jobid, waited, 160, stat, timeout, usage, err, 160
-            r1 = [jobid, waited, 160, stat, timeout, usage, err, 160]
+            r = FFI_DRMAA.drmaa_wait jobid, waited, ErrSize, stat, timeout, usage, err, ErrSize
+            r1 = [jobid, waited, ErrSize, stat, timeout, usage, err, ErrSize]
 
             return nil if r == errno_timeout
             if r != errno_no_rusage
@@ -578,10 +485,9 @@ module DRMAA
 
         # int drmaa_set_attribute(drmaa_job_template_t *, const char *, const char *, char *, size_t)
         def DRMAA.set_attribute(jt, name, value)
-            err=""
-            (0..100).each { |x| err << " "}
-            r = FFI_DRMAA.drmaa_set_attribute jt.get_pointer(0), name, value, err, 160
-            r1 =  [jt.get_pointer(0),name,value,err,160]
+            err=" " * ErrSize
+            r = FFI_DRMAA.drmaa_set_attribute jt.get_pointer(0), name, value, err, ErrSize
+            r1 =  [jt.get_pointer(0),name,value,err,ErrSize]
             DRMAA.throw(r, r1[3])
         end
 
@@ -610,7 +516,7 @@ module DRMAA
         def DRMAA.get_attribute(jt, name)
             err = EC
             value = EC
-            r,r1 = @drmaa_get_attribute.call(jt.ptr, name, value, 160, err, 160)
+            r,r1 = @drmaa_get_attribute.call(jt.ptr, name, value, ErrSize, err, ErrSize)
             DRMAA.throw(r, r1[3])
             return r1[2]
         end
@@ -618,13 +524,11 @@ module DRMAA
         # int drmaa_get_vector_attribute(drmaa_job_template_t *, const char *, 
         #                   drmaa_attr_values_t **, char *, size_t )
         def DRMAA.get_vector_attribute(jt, name)
-            #attr = DL.malloc(DL.sizeof('p'))
-            #r,r1 = @drmaa_get_vector_attribute.call(jt.ptr, name, attr, err, 160)
             err=""
             (0..100).each { |x| err << " "}
             attr = FFI::MemoryPointer.new :pointer
-            r = FFI_DRMAA.drmaa_get_vector_attribute jt.get_pointer(0), name, attr, err, 160
-            r1 = [jt.get_pointer(0), name, attr, err, 160]	
+            r = FFI_DRMAA.drmaa_get_vector_attribute jt.get_pointer(0), name, attr, err, ErrSize
+            r1 = [jt.get_pointer(0), name, attr, err, ErrSize]	
             DRMAA.throw(r, r1[3])
             return drmaa_get_vector_attribute(r1[2])
         end
@@ -640,7 +544,7 @@ module DRMAA
             errno_timeout = DRMAA.str2errno("DRMAA_ERRNO_EXIT_TIMEOUT")
             ids = jobs.map{|s| s.to_ptr}
             ids << DL::PtrData.new(0)
-            r,r1 = @drmaa_synchronize.call(ids, timeout, disp, err, 160)
+            r,r1 = @drmaa_synchronize.call(ids, timeout, disp, err, ErrSize)
             if r == errno_timeout
                 return false
             else
