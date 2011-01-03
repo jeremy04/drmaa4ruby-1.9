@@ -14,10 +14,12 @@ end
 class TestDRMAA < Test::Unit::TestCase
 
 	def setup
+                puts "\nSession Started"
 		@session = DRMAA::Session.new
 	end
 
 	def teardown
+                puts "\nSession Ended"
 		@session.finalize(0)
 	end
 
@@ -61,7 +63,20 @@ class TestDRMAA < Test::Unit::TestCase
 		assert_not_nil(jobid)
 	end
 
+        def test_get
+                t = DRMAA::JobTemplate.new
+                command = "/bin/sleep"
+                t.command = command
+                t.arg = ["1"]
+                t.stdout = ":/dev/null"
+                t.join = true
+                jobid = @session.run(t)
+                attr = t.get("drmaa_remote_command")
+                assert_equal(attr,command)
+        end
+
 	def test_run_bulk
+                skip
 		ntasks = 30	
 		t = Sleeper.new
 		pre = @session.run_bulk(t, 1, ntasks, 1)
@@ -74,4 +89,5 @@ class TestDRMAA < Test::Unit::TestCase
 		t = Sleeper.new
 		assert_not_nil(t)
 	end
+
 end

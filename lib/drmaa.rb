@@ -48,7 +48,7 @@ module FFI_DRMAA
     attach_function 'drmaa_init', [:string, :string, :ulong], :int
     attach_function 'drmaa_allocate_job_template', [:pointer, :string, :ulong], :int
 
-    attach_function 'drmaa_get_attribute', [:pointer, :string, :ulong], :int
+    attach_function 'drmaa_get_attribute', [:pointer, :string, :pointer, :ulong, :string, :ulong], :int
     attach_function 'drmaa_get_attribute_names', [:pointer, :string, :ulong], :int
     attach_function 'drmaa_get_vector_attribute', [:pointer, :string, :pointer, :string, :ulong], :int
     attach_function 'drmaa_get_vector_attribute_names', [:pointer, :string, :ulong], :int
@@ -68,13 +68,12 @@ module FFI_DRMAA
     attach_function 'drmaa_wcoredump', [:pointer,:int,:string,:ulong], :int
     attach_function 'drmaa_exit', [:string, :ulong], :int
     attach_function 'drmaa_run_bulk_jobs', [:pointer,:pointer,:int,:int,:int,:string,:ulong], :int
-    #TODO
     attach_function 'drmaa_get_next_job_id', [ :pointer , :string , :ulong ], :int
     attach_function 'drmaa_release_job_ids', [ :pointer ], :void
-    # attach_function 'drmaa_get_next_attr_name', [ :pointer , :string, :ulong], :int
-    # attach_function 'drmaa_release_attr_names', [ :pointer ], :void
-    # attach_function 'drmaa_get_next_attr_value',[ :pointer, :string, :ulong], :int
-    # attach_function 'drmaa_release_attr_values',[ :pointer ], :void
+    attach_function 'drmaa_get_next_attr_name', [ :pointer , :string, :ulong], :int
+    attach_function 'drmaa_release_attr_names', [ :pointer ], :void
+    attach_function 'drmaa_get_next_attr_value',[ :pointer, :string, :ulong], :int
+    attach_function 'drmaa_release_attr_values',[ :pointer ], :void
 
 end
 
@@ -367,18 +366,11 @@ module DRMAA
                 # STDERR.puts "get_all(2) " + DRMAA.errno2str(ret)
                 err=" " * ErrSize
                 jobid=" " * ErrSize
-                # Original code here:
-                # Notice how "nxt" is not called yet, but when you use "call" it executes the function
-                #
-                #r,r1 = nxt.call(ids.get_pointer(0), jobid, ErrSize)
-                #
-                # need to refactor this.. is not generic enough .. will only do getnext and release
-
-                r = FFI_DRMAA.drmaa_get_next_job_id ids.get_pointer(0), jobid, ErrSize
+                r = FFI_DRMAA.send(nxt,ids.get_pointer(0), jobid, ErrSize)
+                jobid = jobid.unpack('Z*')[0]
+                # unpack null-terminated string , return first value
                 r1 =  [ids.get_pointer(0),jobid,ErrSize]
                 
-                # ^^^^ need to refactor 
-
                 if r != errno_expect
                     DRMAA.throw(r, "unexpected error")
                     values.push(r1[1])
@@ -387,32 +379,27 @@ module DRMAA
                 ret = r
             end
             # puts "get_all(4)"
-            #
-            # Original code:
-            #
-            # rls.call(ids.ptr)
-            FFI_DRMAA.drmaa_release_job_ids(ids.get_pointer(0))
-            # need to refactor
+            FFI_DRMAA.send(rls,ids.get_pointer(0))
             return values
         end
 
         # int drmaa_get_next_job_id(drmaa_job_ids_t*, char *, size_t )
         # void drmaa_release_job_ids(drmaa_job_ids_t*)
         def DRMAA.get_job_ids(ids)
-            return DRMAA.get_all(ids, @drmaa_get_next_job_id, @drmaa_release_job_ids)
+            return DRMAA.get_all(ids, :drmaa_get_next_job_id, :drmaa_release_job_ids)
         end
 
 
         # int drmaa_get_next_attr_name(drmaa_attr_names_t*, char *, size_t )
         # void drmaa_release_attr_names(drmaa_attr_names_t*)
         def DRMAA.get_attr_names(names)
-            return DRMAA.get_all(names, @drmaa_get_next_attr_name, @drmaa_release_attr_names)
+            return DRMAA.get_all(names, :drmaa_get_next_attr_name, :drmaa_release_attr_names)
         end
 
         # int drmaa_get_next_attr_value(drmaa_attr_values_t*, char *, size_t )
         # void drmaa_release_attr_values(drmaa_attr_values_t*)
         def DRMAA.get_attr_values(ids)
-            return DRMAA.get_all(ids, @drmaa_get_next_attr_value, @drmaa_release_attr_values)
+            return DRMAA.get_all(ids, :drmaa_get_next_attr_value, :drmaa_release_attr_values)
         end
 
         # int drmaa_wifexited(int *, int, char *, size_t)
@@ -486,11 +473,13 @@ module DRMAA
 
             r = FFI_DRMAA.drmaa_wait jobid, waited, ErrSize, stat, timeout, usage, err, ErrSize
             r1 = [jobid, waited, ErrSize, stat, timeout, usage, err, ErrSize]
-
+ 
+            pp "timeout? :(" if r == errno_timeout
+       
             return nil if r == errno_timeout
             if r != errno_no_rusage
                 DRMAA.throw(r, r1[6])
-                return JobInfo.new(r1[1], r1[3], nil) # TODO: change to when ready:      JobInfo.new(r1[1], r1[3], usage)
+                return JobInfo.new(r1[1], r1[3], usage) 
             else
                 return JobInfo.new(r1[1], r1[3])
             end
@@ -557,9 +546,12 @@ module DRMAA
         # int drmaa_get_attribute(drmaa_job_template_t *, const char *, char *, 
         #  							size_t , char *, size_t)
         def DRMAA.get_attribute(jt, name)
-            err = EC
-            value = EC
-            r,r1 = @drmaa_get_attribute.call(jt.ptr, name, value, ErrSize, err, ErrSize)
+            err = " " * ErrSize
+            value = " " * ErrSize
+            r = FFI_DRMAA.drmaa_get_attribute jt.get_pointer(0), name, value, ErrSize, err, ErrSize
+            value = value.unpack('Z*')[0]
+            # unpack null-terminated string , return first value
+            r1 = [jt.get_pointer(0), name, value, ErrSize, err, ErrSize]
             DRMAA.throw(r, r1[3])
             return r1[2]
         end
