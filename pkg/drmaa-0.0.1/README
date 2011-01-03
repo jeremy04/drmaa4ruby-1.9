@@ -1,13 +1,17 @@
 DRMAA 4 Ruby 1.9 Interface 
 
-Originally written by Sun Microsystems
+
+Originally written by Andreas Haas from Sun Microsystems
+Most of his code is still intact, trying to keep it that way
+
+Goals:
 
 - DL library changed with Ruby 1.9
 - FFI seemed appropriate to replace DL
 
 Installation directions:
 
-gem install echoe
+gem install echoe (optional)
 gem install ffi
 
 
