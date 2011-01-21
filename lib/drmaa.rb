@@ -221,6 +221,7 @@ module DRMAA
 
         # 101 character buffer constant (length is arbitrary)
         ErrSize = 161
+        WaitSize = 15
         EC = " " * ErrSize
 
         public
@@ -232,6 +233,8 @@ module DRMAA
             r = FFI_DRMAA.drmaa_get_DRM_system(drm, 20, err, ErrSize)
             r1 = [drm, 20, err, ErrSize]
             DRMAA.throw(r, r1[2])
+            drm.delete! "\000"
+            drm.strip!
             return r1[0]
         end
 
@@ -242,6 +245,8 @@ module DRMAA
             err = " " * ErrSize
             r,r1 = FFI_DRMAA.drmaa_get_contact(contact, ErrSize, err, ErrSize)
             r1 = [contact, ErrSize, err, ErrSize]
+            contact.delete! "\000"
+            contact.strip!
             DRMAA.throw(r, r1[2])
             return r1[0]
         end
@@ -254,6 +259,8 @@ module DRMAA
             r = FFI_DRMAA.drmaa_get_DRMAA_implementation(impl, 30, err, ErrSize)
             r1 = [impl, 30, err, ErrSize]
             DRMAA.throw(r, r1[2])
+            impl.delete! "\000"
+            impl.strip!
             return r1[0]
         end
 
@@ -298,6 +305,8 @@ module DRMAA
             err=" " * ErrSize
             r = FFI_DRMAA.drmaa_init contact, err, ErrSize-1
             r1 = [contact,err,ErrSize-1]
+            contact.delete! "\000"
+            contact.strip!
             DRMAA.throw(r, r1[1])
         end
 
@@ -461,18 +470,17 @@ module DRMAA
         def DRMAA.wait(jobid, timeout)
             errno_timeout = DRMAA.str2errno("DRMAA_ERRNO_EXIT_TIMEOUT")
             errno_no_rusage = DRMAA.str2errno("DRMAA_ERRNO_NO_RUSAGE")
-            err = ""
-            waited = ""
+            err = " " * ErrSize
+            waited = " " * WaitSize
             stat = FFI::MemoryPointer.new(:int,4)
-
-            (0..10).each { |x| 	err  << " "
-                waited << " "	
-            }
-
             usage = FFI::MemoryPointer.new :pointer, 1
 
-            r = FFI_DRMAA.drmaa_wait jobid, waited, ErrSize, stat, timeout, usage, err, ErrSize
-            r1 = [jobid, waited, ErrSize, stat, timeout, usage, err, ErrSize]
+            r = FFI_DRMAA.drmaa_wait jobid, waited, WaitSize, stat, timeout, usage, err, ErrSize
+            r1 = [jobid, waited, WaitSize, stat, timeout, usage, err, ErrSize]
+            # getting null's at end of string
+            waited.delete! "\000"
+            waited.strip!
+
  
             pp "timeout? :(" if r == errno_timeout
        
@@ -510,6 +518,8 @@ module DRMAA
             jobid=" " * ErrSize
             r = FFI_DRMAA.drmaa_run_job jobid, ErrSize, jt.get_pointer(0), err, ErrSize
             r1 = [jobid,ErrSize,jt.get_pointer(0), err, ErrSize]
+            jobid.delete! "\000"
+            jobid.strip!
 
             DRMAA.throw(r, r1[3])
             return r1[0]
