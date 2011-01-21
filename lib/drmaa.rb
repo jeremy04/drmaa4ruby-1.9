@@ -74,6 +74,7 @@ module FFI_DRMAA
     attach_function 'drmaa_release_attr_names', [ :pointer ], :void
     attach_function 'drmaa_get_next_attr_value',[ :pointer, :string, :ulong], :int
     attach_function 'drmaa_release_attr_values',[ :pointer ], :void
+    attach_function 'drmaa_control', [:string,:int,:string,:ulong], :int
 
 end
 
@@ -294,8 +295,9 @@ module DRMAA
 
         # int drmaa_control(const char *, int , char *, size_t )
         def DRMAA.control(job, action)
-            err = EC
-            r,r1 = @drmaa_control.call(job, action, err, ErrSize)
+            err = ' ' * ErrSize
+            r = FFI_DRMAA.drmaa_control(job, action, err, ErrSize)
+            r1 = [job, action, err, ErrSize]
             DRMAA.throw(r, r1[2])
         end
 
