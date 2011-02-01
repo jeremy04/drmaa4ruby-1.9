@@ -75,6 +75,7 @@ module FFI_DRMAA
     attach_function 'drmaa_get_next_attr_value',[ :pointer, :string, :ulong], :int
     attach_function 'drmaa_release_attr_values',[ :pointer ], :void
     attach_function 'drmaa_control', [:string,:int,:string,:ulong], :int
+    attach_function 'drmaa_job_ps', [ :string, :pointer , :string, :ulong], :int
 
 end
 
@@ -286,9 +287,10 @@ module DRMAA
 
         # int drmaa_job_ps( const char *, int *, char *, size_t )
         def DRMAA.job_ps(job)
-            err = EC
-            state = 0
-            r,r1 = @drmaa_job_ps.call(job, state, err, ErrSize)
+            err = " " * ErrSize
+            state = FFI::MemoryPointer.new(:int,4)
+            r = FFI_DRMAA.drmaa_job_ps(job, state, err, ErrSize)
+            r1 = [job, state.read_int, err, ErrSize]
             DRMAA.throw(r, r1[2])
             return r1[1]
         end
