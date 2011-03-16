@@ -90,4 +90,26 @@ class TestDRMAA < Test::Unit::TestCase
 		assert_not_nil(t)
 	end
 
+	def test_sync
+		t = DRMAA::JobTemplate.new
+		t.command = "/bin/sleep"
+		t.arg = ["10"]
+                t.stdout = ":/dev/null"
+                t.join = true
+
+		array = []
+                jobid = @session.run(t)
+		array << jobid
+		jobid = @session.run(t)
+		array << jobid
+
+		@session.sync!(array)
+		puts "Jobs are Done!"
+
+#		array.each { |job|
+#			puts "Collecting job #{job}"
+#			retval = @session.wait(job)
+#			if retval.wifexited? then puts "Job has finished.." end
+#		}
+	end
 end

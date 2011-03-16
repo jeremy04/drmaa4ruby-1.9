@@ -77,6 +77,8 @@ module FFI_DRMAA
     attach_function 'drmaa_control', [:string,:int,:string,:ulong], :int
     attach_function 'drmaa_job_ps', [ :string, :pointer , :string, :ulong], :int
 
+    attach_function 'drmaa_synchronize', [:pointer,:long,:int,:string,:ulong], :int
+
 end
 
 module DRMAA
@@ -583,16 +585,26 @@ module DRMAA
 
         # int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose, char *, size_t)
         def DRMAA.synchronize(jobs, timeout, dispose)
-            err = EC 
+            err = " " * ErrSize
             if dispose == false
                 disp = 0
             else
                 disp = 1
             end
             errno_timeout = DRMAA.str2errno("DRMAA_ERRNO_EXIT_TIMEOUT")
-            ids = jobs.map{|s| s.to_ptr}
-            ids << DL::PtrData.new(0)
-            r,r1 = @drmaa_synchronize.call(ids, timeout, disp, err, ErrSize)
+#            ids = jobs.map{|s| s.to_ptr}
+#            ids << DL::PtrData.new(0)
+            jobs.flatten!
+            strptrs = []
+            jobs.each { |x| strptrs << FFI::MemoryPointer.from_string(x) }
+            strptrs << nil
+            job_ids = FFI::MemoryPointer.new(:pointer,strptrs.length)
+            strptrs.each_with_index do |p,i|
+                job_ids[i].put_pointer(0, p)
+            end
+            r = FFI_DRMAA.drmaa_synchronize job_ids, timeout, disp, err, ErrSize
+            r1 = [job_ids, timeout, disp, err, ErrSize]
+#           r,r1 = @drmaa_synchronize.call(ids, timeout, disp, err, ErrSize)
             if r == errno_timeout
                 return false
             else

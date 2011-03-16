@@ -2,6 +2,10 @@ Manifest
 README
 Rakefile
 example/example1.rb
+example/example2.rb
+example/test.rb
+example/test2.rb
 lib/drmaa.rb
+lib/original-drmaa.rb
 test/helper.rb
 test/test_drmaa.rb
