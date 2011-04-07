@@ -350,9 +350,8 @@ module DRMAA
             jt = FFI::MemoryPointer.new :pointer
             r = FFI_DRMAA.drmaa_get_vector_attribute_names jt, err, ErrSize
             r1 = [jt,err,ErrSize]
-
             DRMAA.throw(r, r1[1])
-            return DRMAA.get_attr_names(names)
+            return DRMAA.get_attr_names(jt)
         end
 
         # int drmaa_get_attribute_names(drmaa_attr_names_t **, char *, size_t)
@@ -362,10 +361,8 @@ module DRMAA
             jt = FFI::MemoryPointer.new :pointer
             r = FFI_DRMAA.get_attribute_names jt, err, ErrSize
             r1 = [jt,err,ErrSize]
-
-
             DRMAA.throw(r, r1[1])
-            return DRMAA.get_attr_names(names)
+            return DRMAA.get_attr_names(jt)
         end
 
         def DRMAA.get_all(ids, nxt, rls)
@@ -576,11 +573,13 @@ module DRMAA
         #                   drmaa_attr_values_t **, char *, size_t )
         def DRMAA.get_vector_attribute(jt, name)
             err=" " * ErrSize
+            # Not sure why we need this...... 
             attr = FFI::MemoryPointer.new :pointer
             r = FFI_DRMAA.drmaa_get_vector_attribute jt.get_pointer(0), name, attr, err, ErrSize
+            #attr = attr.unpack('Z*')[0]
             r1 = [jt.get_pointer(0), name, attr, err, ErrSize]	
             DRMAA.throw(r, r1[3])
-            return drmaa_get_vector_attribute(r1[2])
+            return DRMAA.get_attr_values(attr)
         end
 
         # int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose, char *, size_t)
