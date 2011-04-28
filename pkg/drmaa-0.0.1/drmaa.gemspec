@@ -6,11 +6,11 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2") if s.respond_to? :required_rubygems_version=
   s.authors = ["Chris Young"]
-  s.date = %q{2011-03-10}
+  s.date = %q{2011-04-07}
   s.description = %q{A gem that illustrates how to build a gem}
   s.email = %q{beesucker @nospam@ gmail.com}
   s.extra_rdoc_files = ["README", "lib/drmaa.rb", "lib/original-drmaa.rb"]
-  s.files = ["Manifest", "README", "Rakefile", "example/example1.rb", "example/example2.rb", "example/test.rb", "example/test2.rb", "lib/drmaa.rb", "lib/original-drmaa.rb", "test/helper.rb", "test/test_drmaa.rb", "drmaa.gemspec"]
+  s.files = ["Manifest", "README", "Rakefile", "example/check.rb", "example/example1.rb", "example/example2.rb", "example/test.rb", "example/test2.rb", "example/test_node_shuf_list", "lib/drmaa.rb", "lib/original-drmaa.rb", "test/helper.rb", "test/test_drmaa.rb", "drmaa.gemspec"]
   s.homepage = %q{http://github.com/tombombadil/hello_world}
   s.rdoc_options = ["--line-numbers", "--inline-source", "--title", "Drmaa", "--main", "README"]
   s.require_paths = ["lib"]

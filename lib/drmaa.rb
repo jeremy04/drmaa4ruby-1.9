@@ -47,7 +47,6 @@ module FFI_DRMAA
     attach_function 'drmaa_version', [ :pointer , :pointer , :string , :ulong ], :int
     attach_function 'drmaa_init', [:string, :string, :ulong], :int
     attach_function 'drmaa_allocate_job_template', [:pointer, :string, :ulong], :int
-
     attach_function 'drmaa_get_attribute', [:pointer, :string, :pointer, :ulong, :string, :ulong], :int
     attach_function 'drmaa_get_attribute_names', [:pointer, :string, :ulong], :int
     attach_function 'drmaa_get_vector_attribute', [:pointer, :string, :pointer, :string, :ulong], :int
@@ -316,7 +315,6 @@ module DRMAA
             DRMAA.throw(r, r1[1])
         end
 
-
         # int drmaa_exit(char *, size_t)
         def DRMAA.exit
             err=" " * ErrSize
@@ -573,12 +571,12 @@ module DRMAA
         #                   drmaa_attr_values_t **, char *, size_t )
         def DRMAA.get_vector_attribute(jt, name)
             err=" " * ErrSize
-            # Not sure why we need this...... 
             attr = FFI::MemoryPointer.new :pointer
             r = FFI_DRMAA.drmaa_get_vector_attribute jt.get_pointer(0), name, attr, err, ErrSize
-            #attr = attr.unpack('Z*')[0]
             r1 = [jt.get_pointer(0), name, attr, err, ErrSize]	
             DRMAA.throw(r, r1[3])
+
+            # Original author had a method called "drmaa_get_vector_attribute" that did the same thing as this
             return DRMAA.get_attr_values(attr)
         end
 
@@ -591,8 +589,6 @@ module DRMAA
                 disp = 1
             end
             errno_timeout = DRMAA.str2errno("DRMAA_ERRNO_EXIT_TIMEOUT")
-#            ids = jobs.map{|s| s.to_ptr}
-#            ids << DL::PtrData.new(0)
             jobs.flatten!
             strptrs = []
             jobs.each { |x| strptrs << FFI::MemoryPointer.from_string(x) }
@@ -603,7 +599,6 @@ module DRMAA
             end
             r = FFI_DRMAA.drmaa_synchronize job_ids, timeout, disp, err, ErrSize
             r1 = [job_ids, timeout, disp, err, ErrSize]
-#           r,r1 = @drmaa_synchronize.call(ids, timeout, disp, err, ErrSize)
             if r == errno_timeout
                 return false
             else

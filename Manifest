@@ -1,10 +1,12 @@
 Manifest
 README
 Rakefile
+example/check.rb
 example/example1.rb
 example/example2.rb
 example/test.rb
 example/test2.rb
+example/test_node_shuf_list
 lib/drmaa.rb
 lib/original-drmaa.rb
 test/helper.rb
