@@ -8,7 +8,7 @@ class Sleeper < DRMAA::JobTemplate
         def initialize
                 super
                 self.command = "/bin/sleep"
-                self.arg     = ["1"]
+                self.arg     = ["10"]
                 self.stdout  = ":/dev/null"
                 self.join    = true
         end
