@@ -44,6 +44,12 @@ module FFI_DRMAA
     extend FFI::Library
 
     ffi_lib 'libdrmaa.so'
+
+    #TODO / Missing: 
+    #
+    # drmaa_delete_job_template
+    # drmaa_strerror
+
     attach_function 'drmaa_version', [ :pointer , :pointer , :string , :ulong ], :int
     attach_function 'drmaa_init', [:string, :string, :ulong], :int
     attach_function 'drmaa_allocate_job_template', [:pointer, :string, :ulong], :int
